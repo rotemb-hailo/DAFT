@@ -5,13 +5,13 @@ import json
 import os
 import sys
 
-import aft.config as config
+import aft.internal.config as config
 import aft.devices.common as common
-import aft.errors as errors
-import aft.tools.ssh as ssh
+import aft.internal.errors as errors
+import aft.internal.tools.ssh as ssh
 from aft.devices.device import Device
-from aft.logger import Logger as logger
-from aft.tools.gpio_export import export_gpio, set_gpio
+from aft.internal.logger import Logger as logger
+from aft.internal.tools import export_gpio, set_gpio
 
 try:
     import subprocess32

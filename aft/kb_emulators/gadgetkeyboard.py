@@ -1,29 +1,60 @@
-# coding=utf-8
-# Copyright (c) 2016 Intel, Inc.
-# Author Simo Kuusela <simo.kuusela@intel.com>
-#
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the
-# Free Software Foundation; version 2 of the License
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-
 import os.path
 from multiprocessing import Process
 from time import sleep
 
 from aft.kb_emulators.kb_emulator import KeyboardEmulator
-from aft.logger import Logger as logger
+from aft.internal.logger import Logger as logger
+
+
+class TimeoutError(Exception):
+    """
+    Error caused by not connecting to host device
+    """
+
+
+class TranslateError(Exception):
+    """
+    Error caused when key_to_hex() cant translate a key
+    """
+
+    def __init__(self, _file, line, msg):
+        super(TranslateError, self).__init__()
+        self._file = _file
+        self.line = line
+        self.msg = msg
+
+    def __str__(self):
+        if self._file != "arg":
+            return ("Error in file " + os.path.abspath(self._file) +
+                    " on line " + str(self.line) + ": " + self.msg)
+        else:
+            return "Error in send_keystrokes() argument: " + self.msg
+
+
+class LineSyntaxError(Exception):
+    """
+    Error caused by text file syntax error
+    """
+
+    def __init__(self, _file, line, msg):
+        super(LineSyntaxError, self).__init__()
+        self._file = _file
+        self.line = line
+        self.msg = msg
+
+    def __str__(self):
+        if self._file != "arg":
+            return ("Error in file " + os.path.abspath(self._file) +
+                    " on line " + str(self.line) + ": " + self.msg)
+        else:
+            return "Error in send_keystrokes() argument: " + self.msg
 
 
 class GadgetKeyboard(KeyboardEmulator):
-    '''
+    """
     Keyboard emulator class which has methods for sending key strokes through
     usb port using Linux g_hid module.
-    '''
+    """
 
     # HID keyboard hex codes for modifier keys
     modifier_codes = {
@@ -86,7 +117,7 @@ class GadgetKeyboard(KeyboardEmulator):
         logger.set_process_prefix()
 
     def send_keystrokes(self, filepath):
-        '''
+        """
         Send keystrokes from a file to USB.
 
         Args:
@@ -115,7 +146,7 @@ class GadgetKeyboard(KeyboardEmulator):
             DELAY=0.2
             <F2> "Hello world!" <ENTER> <SHIFT_L> "uppercase" <SHIFT_L>
 
-        '''
+        """
 
         self.delay_between_keys = 0
         self.modifier = 0
@@ -130,7 +161,7 @@ class GadgetKeyboard(KeyboardEmulator):
                 self.line_number += 1
 
     def send_keystrokes_from_arg(self, lines):
-        '''
+        """
         Send argument as keystrokes.
 
         Args:
@@ -142,7 +173,7 @@ class GadgetKeyboard(KeyboardEmulator):
 
                     send_keystrokes("DELAY=0.1 \n \"Hello world\" \n <ENTER>")
 
-        '''
+        """
 
         self.delay_between_keys = 0
         self.modifier = 0
@@ -155,12 +186,12 @@ class GadgetKeyboard(KeyboardEmulator):
             self.line_number += 1
 
     def parse_line(self, line):
-        '''
+        """
         Parse a text file line.
 
         Args:
             line: Line from a text file.
-        '''
+        """
         # If line starts with 'DELAY' set the delay
         if line[0:5] == "DELAY":
             try:
@@ -199,7 +230,7 @@ class GadgetKeyboard(KeyboardEmulator):
                 i += 1
 
     def parse_special(self, line, i):
-        '''
+        """
         Parse a special key that starts with '<' and ends with '>'.
 
         Args:
@@ -208,7 +239,7 @@ class GadgetKeyboard(KeyboardEmulator):
 
         Returns:
             i: Iterator for the line that tells where the special key ends.
-        '''
+        """
 
         i += 1
         special = ""
@@ -236,7 +267,7 @@ class GadgetKeyboard(KeyboardEmulator):
         return i
 
     def parse_text(self, line, i):
-        '''
+        """
         Parse text that starts and ends with ".
 
         Args:
@@ -245,7 +276,7 @@ class GadgetKeyboard(KeyboardEmulator):
 
         Returns:
             i: Iterator for the line that tells where the ending " is.
-        '''
+        """
         i += 1
         try:
             # Send keys until " is found.
@@ -267,7 +298,7 @@ class GadgetKeyboard(KeyboardEmulator):
         return i
 
     def send_a_key(self, key, timeout=20):
-        '''
+        """
         HID keyboard message length is 8 bytes and format is:
 
             [modifier, reserved, Key1, Key2, Key3, Key4, Key6, Key7]
@@ -281,7 +312,7 @@ class GadgetKeyboard(KeyboardEmulator):
         Args:
             key: A key to send, for example: "a", "z", "3", "F2", "ENTER"
             timeout: how long sending a key will be tried until quitting [s]
-        '''
+        """
 
         def writer(path, message, empty):
             while True:
@@ -344,12 +375,12 @@ class GadgetKeyboard(KeyboardEmulator):
 
         # If the key isn't in key_codes, it should be a normal letter
         elif len(key) == 1:
-            if 'A' <= key and key <= 'Z':
+            if 'A' <= key <= 'Z':
                 hex_key = ord(key) - ord('A') + 0x04
                 # Uppercase letters need SHIFT modifier
                 modifier_key = self.modifier_codes["SHIFT_L"]
 
-            elif 'a' <= key and key <= 'z':
+            elif 'a' <= key <= 'z':
                 hex_key = ord(key) - ord('a') + 0x04
 
             else:
@@ -361,47 +392,3 @@ class GadgetKeyboard(KeyboardEmulator):
                                  "Couldn't translate key: <" + key + ">")
 
         return hex_key, modifier_key
-
-
-class TimeoutError(Exception):
-    '''
-    Error caused by not connecting to host device
-    '''
-
-
-class TranslateError(Exception):
-    '''
-    Error caused when key_to_hex() cant translate a key
-    '''
-
-    def __init__(self, _file, line, msg):
-        super(TranslateError, self).__init__()
-        self._file = _file
-        self.line = line
-        self.msg = msg
-
-    def __str__(self):
-        if self._file != "arg":
-            return ("Error in file " + os.path.abspath(self._file) +
-                    " on line " + str(self.line) + ": " + self.msg)
-        else:
-            return ("Error in send_keystrokes() argument: " + self.msg)
-
-
-class LineSyntaxError(Exception):
-    '''
-    Error caused by text file syntax error
-    '''
-
-    def __init__(self, _file, line, msg):
-        super(LineSyntaxError, self).__init__()
-        self._file = _file
-        self.line = line
-        self.msg = msg
-
-    def __str__(self):
-        if self._file != "arg":
-            return ("Error in file " + os.path.abspath(self._file) +
-                    " on line " + str(self.line) + ": " + self.msg)
-        else:
-            return ("Error in send_keystrokes() argument: " + self.msg)

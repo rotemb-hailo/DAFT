@@ -17,15 +17,11 @@ Tools for remote controlling a device over ssh.
 """
 
 import os
+import subprocess as subprocess32
 
-import aft.tools.misc as tools
-from aft.logger import Logger as logger
-from aft.tools.fabric_wrapper import FabricWrapper
-
-try:
-    import subprocess32
-except ImportError:
-    import subprocess as subprocess32
+import aft.internal.tools.misc as tools
+from aft.internal.logger import Logger as logger
+from aft.internal.tools.fabric_wrapper import FabricWrapper
 
 
 def _get_proxy_settings():
@@ -107,7 +103,7 @@ def remote_execute(remote_ip, command, timeout=60, ignore_return_codes=None,
     try:
         logger.info("Executing " + " ".join(command), filename="ssh.log")
         fabric_wrapper = FabricWrapper(host=remote_ip, user=user, password='root')
-        ret, _, _ = fabric_wrapper.run_command(command=command, timeout=timeout,connect_timeout=connect_timeout)
+        ret, _, _ = fabric_wrapper.run_command(command=command, timeout=timeout, connect_timeout=connect_timeout)
     except subprocess32.CalledProcessError as err:
         logger.error("Command raised exception: " + str(err), filename="ssh.log")
         logger.error("Output: " + str(err.output), filename="ssh.log")

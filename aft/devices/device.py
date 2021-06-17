@@ -23,10 +23,10 @@ import threading
 from abc import abstractmethod, ABC
 from time import sleep
 
-import aft.errors as errors
-import aft.tools.serial_recorder as serial_recorder
-from aft.logger import Logger as logger
-from aft.tools.threadhandler import ThreadHandler
+import aft.internal.errors as errors
+import aft.internal.tools.serial_recorder as serial_recorder
+from aft.internal.logger import Logger as logger
+from aft.internal.tools.thread_handler import ThreadHandler
 
 
 class Device(ABC):

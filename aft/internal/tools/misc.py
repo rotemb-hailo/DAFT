@@ -2,11 +2,8 @@
 Convenience functions for (unix) command execution
 """
 
-try:
-    import subprocess32
-except ImportError:
-    import subprocess as subprocess32
 import os
+import subprocess as subprocess32
 import time
 
 
@@ -32,12 +29,12 @@ def local_execute(command, timeout=60, ignore_return_codes=None):
             except subprocess32.TimeoutExpired:
                 pass
 
-    if return_code == None:
+    if return_code is None:
         # Time ran out but the process didn't end.
         raise subprocess32.TimeoutExpired(cmd=command, output=output,
                                           timeout=timeout)
 
-    if ignore_return_codes == None:
+    if ignore_return_codes is None:
         ignore_return_codes = []
     if return_code in ignore_return_codes or return_code == 0:
         return output
@@ -60,18 +57,20 @@ def inject_ssh_keys_to_image(image_file):
     possible_roots = []
     block_size = 512
     output = local_execute(("fdisk -l " + image_file).split())
+
     for line in output.split("\n"):
         if "Sector size" in line:
             block_size = int(line.split()[-2])
         if "Linux" in line:
             _start_block = int(line.split()[1])
             possible_roots.append(_start_block)
+
     os.makedirs("daft_tmp_dir")
     auth_keys_path = "daft_tmp_dir/home/root/.ssh/authorized_keys"
+
     for start_block in possible_roots:
         offset = str(block_size * start_block)
-        local_execute(("mount -o loop,offset=" + offset + " " + image_file + \
-                       " daft_tmp_dir").split())
+        local_execute(("mount -o loop,offset=" + offset + " " + image_file + " daft_tmp_dir").split())
         if os.path.exists("daft_tmp_dir/home/root"):
             local_execute(("touch " + auth_keys_path).split())
             with open(auth_keys_path, "a") as authorized_keys:

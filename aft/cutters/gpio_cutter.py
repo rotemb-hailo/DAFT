@@ -2,7 +2,7 @@ import os
 from contextlib import contextmanager
 
 from aft.cutters.cutter import Cutter
-from aft.logger import Logger as logger
+from aft.internal.logger import Logger as logger
 
 
 class GpioCutterError(Exception):

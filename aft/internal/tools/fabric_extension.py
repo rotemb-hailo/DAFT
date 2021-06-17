@@ -3,8 +3,6 @@ a clone of https://github.com/fabric/patchwork
 with small improvements: added the support of bi-directional rsync
 """
 
-from invoke.vendor import six
-
 
 def rsync(c,
           local_path,
@@ -82,7 +80,7 @@ def rsync(c,
         remote to local. By default it is sync from local to remote.
     """
     # Turn single-string exclude into a one-item list for consistency
-    if isinstance(exclude, six.string_types):
+    if isinstance(exclude, str):
         exclude = [exclude]
     if exclude is None:
         exclude = ()
@@ -102,7 +100,7 @@ def rsync(c,
     # always-a-list, always-up-to-date-from-all-sources attribute to save us
     # from having to do this sort of thing. (may want to wait for Paramiko auth
     # overhaul tho!)
-    if isinstance(keys, six.string_types):
+    if isinstance(keys, str):
         keys = [keys]
     if keys:
         key_string = "-i " + " -i ".join(keys)

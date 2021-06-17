@@ -8,17 +8,15 @@ import os
 import sys
 import time
 
-import aft.config as config
-import aft.devicefactory as device_factory
-import aft.errors as errors
-from aft.logger import Logger as logger
-from aft.tester import Tester
-from aft.tools.misc import local_execute, inject_ssh_keys_to_image
+import aft.internal.config as config
+import aft.internal.device_factory as device_factory
+import aft.internal.errors as errors
+from aft.internal.logger import Logger as logger
+from aft.internal.tools.misc import local_execute, inject_ssh_keys_to_image
 
 
 class DevicesManager:
     """Class handling devices connected to the same host PC"""
-
     __PLATFORM_FILE_NAME = "/etc/aft/devices/platform.cfg"
 
     # Construct the device object of the correct machine type based on the
@@ -35,7 +33,7 @@ class DevicesManager:
                 Command line arguments, as parsed by argparse
         """
         self._args = args
-        self._lockfiles = []
+        self._lock_files = []
         self.device_configs = self._construct_configs()
 
     def _construct_configs(self):
@@ -67,7 +65,7 @@ class DevicesManager:
         catalog_config = configparser.SafeConfigParser()
         catalog_config.read(catalog_config_file)
 
-        configs = []
+        configs = list()
 
         for device_title in catalog_config.sections():
             model = device_title
@@ -76,7 +74,7 @@ class DevicesManager:
             platform = catalog_entry["platform"]
             platform_entry = dict(platform_config.items(platform))
 
-            settings = {}
+            settings = dict()
 
             # note the order: more specific file overrides changes from
             # more generic. This should be maintained
@@ -126,6 +124,7 @@ class DevicesManager:
         # Basically very similar to a reserve-method
         # we just populate they devices array with a single device
         devices = []
+
         for device_config in self.device_configs:
             if device_config["name"].lower() == machine_name.lower():
                 cutter = device_factory.build_cutter(device_config["settings"])
@@ -166,7 +165,7 @@ class DevicesManager:
                     fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
                     logger.info("Device acquired.")
-                    self._lockfiles.append(("daft_dut_lock", lockfile))
+                    self._lock_files.append(("daft_dut_lock", lockfile))
                     atexit.register(self.release, device)
 
                     return device
@@ -185,10 +184,10 @@ class DevicesManager:
         Put the reserved device back to the pool. It will happen anyway when
         the process dies, but this removes the stale lockfile.
         """
-        for i in self._lockfiles:
+        for i in self._lock_files:
             if i[0] == "daft_dut_lock":
                 i[1].close()
-                self._lockfiles.remove(i)
+                self._lock_files.remove(i)
                 break
 
         if reserved_device:
@@ -204,14 +203,9 @@ class DevicesManager:
         Args:
             args: AFT arguments
         Returns:
-            device, tester: Reserved machine and tester handles.
+            device: Reserved machine.
         """
         device = self.reserve()
-
-        if args.testplan:
-            device.test_plan = args.testplan
-
-        tester = Tester(device)
 
         if args.record:
             device.record_serial()
@@ -222,10 +216,10 @@ class DevicesManager:
         if args.emulateusb:
             self.start_image_usb_emulation(args, device.leases_file_name)
             inject_ssh_keys_to_image(args.file_name)
-            return device, tester
+            return device
 
         if args.noflash:
-            return device, tester
+            return device
 
         flash_attempt = 0
         flash_retries = args.flash_retries
@@ -235,7 +229,7 @@ class DevicesManager:
                 print(f"Flashing {device.name}, attempt {flash_attempt} of {flash_retries}.")
                 device.write_image(args.file_name)
                 print("Flashing successful.")
-                return device, tester
+                return device
 
             except KeyboardInterrupt:
                 raise

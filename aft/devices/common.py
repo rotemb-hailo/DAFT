@@ -8,15 +8,14 @@ the Device base class.
 import os
 import sys
 import time
-from pathlib import Path
 
 try:
     import subprocess32
 except ImportError:
     import subprocess as subprocess32
 
-from aft.logger import Logger as logger
-import aft.tools.ssh as ssh
+from aft.internal.logger import Logger as logger
+import aft.internal.tools.ssh as ssh
 
 
 def wait_for_responsive_ip_for_pc_device(leases_file_path, timeout, polling_interval):

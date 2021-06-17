@@ -6,8 +6,8 @@ import time
 
 import serial
 
-import aft.tools.ansiparser as ansi_parser
-from aft.tools.threadhandler import ThreadHandler
+import aft.internal.tools.ansi_parser as ansi_parser
+from aft.internal.tools.thread_handler import ThreadHandler
 
 
 def main(port, rate, output):
