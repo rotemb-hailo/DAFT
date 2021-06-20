@@ -1,0 +1,14 @@
+FROM ubuntu:18.04
+
+LABEL maintainer="rotemb@hailo.ai"
+LABEL version="0.1"
+LABEL description="Ubuntu based imaged for DAFT PC."
+
+# ARG DAFT_WORKSPACE=noninteractive
+
+WORKDIR /usr/bin/app
+COPY ./pc_host .
+RUN apt-get update && \
+    apt-get install -y xinetd tftpd tftp dnsmasq nfs-kernel-server
+
+# chmod a+x server_initialize && bash -c "./server_initialize.sh"

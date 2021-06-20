@@ -3,20 +3,16 @@ Class representing a PC-like Device with an IP.
 """
 import json
 import os
+import subprocess
 import sys
 
-import aft.internal.config as config
 import aft.devices.common as common
+import aft.internal.config as config
 import aft.internal.errors as errors
 import aft.internal.tools.ssh as ssh
 from aft.devices.device import Device
 from aft.internal.logger import Logger as logger
-from aft.internal.tools import export_gpio, set_gpio
-
-try:
-    import subprocess32
-except ImportError:
-    import subprocess as subprocess32
+from aft.internal.tools.gpio_export import export_gpio, set_gpio
 
 
 class PCDevice(Device):
@@ -418,7 +414,7 @@ class PCDevice(Device):
             logger.info(f'Trying to ping {self.PC_STATIC_IP}')
             ping_command = f"ping -c 1 {self.PC_STATIC_IP}".split()
             self.execute(ping_command, timeout=10)
-        except subprocess32.CalledProcessError:
+        except subprocess.CalledProcessError:
             logger.info("Ping failed, trying to add an route via BBB to the PC")
             add_ip_route_command = f"ip route add {self.PC_NETWORK} via {self.BBB_STATIC_IP}".split()
             self.execute(add_ip_route_command, timeout=30)

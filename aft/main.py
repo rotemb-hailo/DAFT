@@ -27,10 +27,8 @@ def main():
         logger.error("Keyboard interrupt, stopping aft.")
 
         return SUCCESS_EXIT_CODE
-    except:
-        _err = sys.exc_info()
-        logger.error(str(_err[0]).split("'")[1] + ": " + str(_err[1]))
-
+    except Exception as e:
+        logger.error(str(e))
         raise
     finally:
         ThreadHandler.set_flag(ThreadHandler.RECORDERS_STOP)
