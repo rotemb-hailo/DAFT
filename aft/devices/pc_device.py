@@ -157,13 +157,13 @@ class PCDevice(Device):
                 else:
                     logger.warning("No keyboard emulator defined for the device")
 
-                ip_address = self._wait_for_responsive_ip()
+                ip_address = self.wait_for_responsive_ip()
                 dut_in_service_mode = common.verify_device_mode(self.device_ip, self._service_mode_name)
                 booted_in_required_mode = (dut_in_service_mode and target == "service_mode") or \
                                           (not dut_in_service_mode and target == "test_mode")
 
                 if ip_address and booted_in_required_mode:
-                    logger.info(f"Correctly booted {target} image")
+                    logger.info(f"Correctly booted {target} image - IP: {ip_address}")
                     self._post_boot_hooks(target)
 
                     return
@@ -178,7 +178,7 @@ class PCDevice(Device):
         logger.critical("Unable to get the device in mode " + target)
         raise errors.AFTDeviceError("Could not set the device in mode " + target)
 
-    def _wait_for_responsive_ip(self):
+    def wait_for_responsive_ip(self):
         """
         For a limited amount of time, try to assess if the device
         is in the mode requested.

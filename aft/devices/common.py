@@ -45,7 +45,7 @@ def wait_for_responsive_ip_for_pc_device(leases_file_path, timeout, polling_inte
         logger.info("Got a response from " + responsive_ip)
         return responsive_ip
 
-    logger.info("No responsive ip was found")
+    logger.warning("No responsive ip was found. Please verify that your image supports SSH")
 
 
 def get_ip_for_pc_device(leases_file_path):

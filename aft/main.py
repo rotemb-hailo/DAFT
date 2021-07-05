@@ -5,6 +5,7 @@ Main entry point for aft.
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 import aft.internal.config as config
 from aft.internal.devices_manager import DevicesManager
@@ -46,17 +47,26 @@ def main_logic():
         logger.level(logging.DEBUG)
 
     device_manager = DevicesManager(args)
-    device = device_manager.try_flash_model(args)
 
-    if args.emulateusb:
-        device.boot_usb_test_mode()
-    else:
-        if args.boot == "test_mode":
-            device.boot_internal_test_mode()
-        elif args.boot == "service_mode":
-            device.boot_usb_service_mode()
+    with device_manager as device:
+        device_manager.prepare_device(device, args)
+        device_manager.try_flash_device(args, device)
 
-    device_manager.release(device)
+        if args.emulateusb:
+            device.boot_usb_test_mode()
+        else:
+            if args.boot == "test_mode":
+                device.boot_internal_test_mode()
+            elif args.boot == "service_mode":
+                device.boot_usb_service_mode()
+
+        _save_ip(device, args.ip_path)
+
+
+def _save_ip(device, ip_path):
+    if ip_path:
+        device_ip = device.get_ip()
+        Path(ip_path).write_text(device_ip)
 
 
 def parse_args():
@@ -122,6 +132,11 @@ def parse_args():
     parser.add_argument("--debug",
                         action="store_true",
                         help="Increases logging level")
+
+    parser.add_argument("--ip-path",
+                        action="store_true",
+                        default=None,
+                        help="")
 
     return parser.parse_args()
 

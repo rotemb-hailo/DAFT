@@ -11,7 +11,7 @@ import time
 import aft.internal.config as config
 import aft.internal.device_factory as device_factory
 import aft.internal.errors as errors
-from aft.internal.logger import Logger as logger
+from aft.internal.logger import Logger
 from aft.internal.tools.misc import local_execute, inject_ssh_keys_to_image
 
 
@@ -34,7 +34,14 @@ class DevicesManager:
         """
         self._args = args
         self._lock_files = []
+        self._logger = Logger
         self.device_configs = self._construct_configs()
+
+    def __enter__(self):
+        self.reserve()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
 
     def _construct_configs(self):
         """
@@ -96,7 +103,7 @@ class DevicesManager:
                                                "Check that paths for catalog and platform files "
                                                "are correct and that the files have some settings inside")
 
-        logger.info("Built configuration sets for " + str(len(configs)) + " devices")
+        self._logger.info("Built configuration sets for " + str(len(configs)) + " devices")
 
         return configs
 
@@ -145,7 +152,7 @@ class DevicesManager:
         return self._do_reserve(devices, machine_name, timeout)
 
     def _do_reserve(self, devices, name, timeout):
-        """
+        """d
         Try to reserve and lock a device from devices list.
         """
         if len(devices) == 0:
@@ -156,7 +163,7 @@ class DevicesManager:
 
         while time.time() - start < timeout:
             for device in devices:
-                logger.info("Attempting to acquire " + device.name)
+                self._logger.info("Attempting to acquire " + device.name)
                 try:
                     # This is a non-atomic operation which may cause trouble
                     # Using a locking database system could be a viable fix.
@@ -164,18 +171,18 @@ class DevicesManager:
                                                  os.O_WRONLY | os.O_CREAT, 0o660), "w")
                     fcntl.flock(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
-                    logger.info("Device acquired.")
+                    self._logger.info("Device acquired.")
                     self._lock_files.append(("daft_dut_lock", lockfile))
                     atexit.register(self.release, device)
 
                     return device
                 except IOError as err:
                     if err.errno in {errno.EACCES, errno.EAGAIN}:
-                        logger.info("Device busy.")
+                        self._logger.info("Device busy.")
                     else:
-                        logger.critical("Cannot obtain lock file.")
+                        self._logger.critical("Cannot obtain lock file.")
                         sys.exit(-1)
-            logger.info("All devices busy ... waiting 10 seconds and trying again.")
+            self._logger.info("All devices busy ... waiting 10 seconds and trying again.")
             time.sleep(10)
         raise errors.AFTTimeoutError("Could not reserve " + name + " in " + str(timeout) + " seconds.")
 
@@ -196,7 +203,7 @@ class DevicesManager:
             if os.path.isfile(path):
                 os.unlink(path)
 
-    def try_flash_model(self, args):
+    def prepare_device(self, device, args):
         """
         Reserve and flash a machine. By default it tries to flash 2 times,
 
@@ -205,8 +212,6 @@ class DevicesManager:
         Returns:
             device: Reserved machine.
         """
-        device = self.reserve()
-
         if args.record:
             device.record_serial()
 
@@ -216,39 +221,41 @@ class DevicesManager:
         if args.emulateusb:
             self.start_image_usb_emulation(args, device.leases_file_name)
             inject_ssh_keys_to_image(args.file_name)
-            return device
 
+        return device
+
+    def try_flash_device(self, args, device):
         if args.noflash:
             return device
 
+        return self._flash(args, device)
+
+    def _flash(self, args, device):
         flash_attempt = 0
         flash_retries = args.flash_retries
+
         while flash_attempt < flash_retries:
             flash_attempt += 1
             try:
                 print(f"Flashing {device.name}, attempt {flash_attempt} of {flash_retries}.")
                 device.write_image(args.file_name)
                 print("Flashing successful.")
-                return device
 
+                return device
             except KeyboardInterrupt:
                 raise
-            except:
-                _err = sys.exc_info()
-                _err = str(_err[0]).split("'")[1] + ": " + str(_err[1])
-                logger.error(_err)
-                print(_err)
+            except Exception as e:
+                self._logger.error(str(e))
+
                 if (flash_retries - flash_attempt) == 0:
-                    print("Flashing failed " + str(flash_attempt) + " times")
+                    self._logger.info("Flashing failed " + str(flash_attempt) + " times")
                     self.release(device)
                     raise
-
                 elif (flash_retries - flash_attempt) == 1:
-                    print("Flashing failed, trying again one more time")
-
+                    self._logger.info("Flashing failed, trying again one more time")
                 elif (flash_retries - flash_attempt) > 1:
-                    print("Flashing failed, trying again " +
-                          str(flash_retries - flash_attempt) + " more times")
+                    self._logger.info(
+                        "Flashing failed, trying again " + str(flash_retries - flash_attempt) + " more times")
 
     def check_libcomposite_service_running(self):
         """
@@ -256,7 +263,8 @@ class DevicesManager:
         """
         found_msg = "OK"
         check_if_service_running = f'systemctl is-active --quiet libcomposite.service && echo "{found_msg}" || "NO"'
-        stdout = local_execute(check_if_service_running.split())
+        self._logger.info(f'Checking if lib-composite is running {check_if_service_running}')
+        stdout = local_execute(check_if_service_running, shell=True)
 
         return stdout.strip() == found_msg
 
@@ -275,7 +283,7 @@ class DevicesManager:
             raise errors.AFTImageNameError("Image file doesn't exist")
 
         local_execute(("start_libcomposite " + image_file).split())
-        logger.info("Started USB mass storage emulation using " + image_file)
+        self._logger.info("Started USB mass storage emulation using " + image_file)
 
     def stop_image_usb_emulation(self, leases_file):
         """
@@ -284,7 +292,7 @@ class DevicesManager:
         self.free_dnsmasq_leases(leases_file)
         local_execute("stop_libcomposite".split())
         local_execute("systemctl start libcomposite.service".split())
-        logger.info("Stopped USB mass storage emulation with an image")
+        self._logger.info("Stopped USB mass storage emulation with an image")
 
     def free_dnsmasq_leases(self, leases_file):
         """
@@ -299,7 +307,7 @@ class DevicesManager:
             f.flush()
 
         local_execute("systemctl start dnsmasq.service".split())
-        logger.info("Freed dnsmasq leases")
+        self._logger.info("Freed dnsmasq leases")
 
     def get_configs(self):
         return self.device_configs

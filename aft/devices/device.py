@@ -1,19 +1,3 @@
-# coding=utf-8
-# Copyright (c) 2013-2016 Intel, Inc.
-# Author Igor Stoppa <igor.stoppa@intel.com>
-# Author Topi Kuutela <topi.kuutela@intel.com>
-# Author Erkka Kääriä <erkka.kaaria@intel.com>
-# Author Simo Kuusela <simo.kuusela@intel.com>
-#
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the
-# Free Software Foundation; version 2 of the License
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-
 """
 Class representing a DUT.
 """
@@ -68,6 +52,16 @@ class Device(ABC):
     def boot_usb_service_mode(self):
         """
         Boot the DUT from USB, expect support image
+        """
+        pass
+
+    @abstractmethod
+    def wait_for_responsive_ip(self):
+        """
+        Get device IP
+
+        Returns (str):
+            the device IP
         """
         pass
 

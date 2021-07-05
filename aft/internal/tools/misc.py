@@ -7,15 +7,14 @@ import subprocess as subprocess32
 import time
 
 
-def local_execute(command, timeout=60, ignore_return_codes=None):
+def local_execute(command, timeout=60, ignore_return_codes=None, shell=False):
     """
     Execute a command on local machine. Returns combined stdout and stderr if
     return code is 0 or included in the list 'ignore_return_codes'. Otherwise
     raises a subprocess32 error.
     """
-    process = subprocess32.Popen(command, universal_newlines=True,
-                                 stdout=subprocess32.PIPE,
-                                 stderr=subprocess32.STDOUT)
+    process = subprocess32.Popen(command, universal_newlines=True, stdout=subprocess32.PIPE, stderr=subprocess32.STDOUT,
+                                 shell=shell)
 
     # Loop until process returns or timeout expires.
     start = time.time()

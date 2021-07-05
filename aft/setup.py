@@ -18,7 +18,7 @@ DEVICE_FILES = [filename for filename in DEVICE_FILES if config_filter(filename)
 TEST_PLANS = [filename for filename in TEST_PLANS if config_filter(filename)]
 CONFIG_FILES = [filename for filename in CONFIG_FILES if config_filter(filename)]
 
-dependencies = ["netifaces", "unittest-xml-reporting", "pyserial>=3", "fabric"]
+dependencies = ["netifaces", "unittest-xml-reporting", "pyserial>=3"]
 
 setup(name="aft",
       version="1.0.0",

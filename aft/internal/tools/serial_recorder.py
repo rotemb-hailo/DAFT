@@ -2,9 +2,9 @@
 A script to record serial output from a tty-device.
 """
 
-import time
-
 import serial
+import sys
+import time
 
 import aft.internal.tools.ansi_parser as ansi_parser
 from aft.internal.tools.thread_handler import ThreadHandler
@@ -15,16 +15,15 @@ def main(port, rate, output):
     Initialization.
     """
     serial_stream = serial.Serial(port, rate, timeout=0.01, xonxoff=True)
-    output_file = open(output, "w")
 
-    print("Starting recording from " + str(port) + " to " + str(output) + ".")
-    record(serial_stream, output_file)
+    with open(output, "w") as output_file:
+        print("Starting recording from " + str(port) + " to " + str(output) + ".")
+        record(serial_stream, output_file)
 
-    print("Parsing output")
-    ansi_parser.parse_file(output)
+        print("Parsing output")
+        ansi_parser.parse_file(output)
 
     serial_stream.close()
-    output_file.close()
 
 
 def record(serial_stream, output):
@@ -36,9 +35,7 @@ def record(serial_stream, output):
     while True:
         try:
             new_data = serial_stream.read(4096)
-
-            if not sys.version_info[0] == 2:
-                new_data.decode("ISO-8859-1")
+            new_data = new_data.decode("ISO-8859-1")
 
             read_buffer += new_data
         except serial.SerialException as err:
@@ -69,7 +66,5 @@ def record(serial_stream, output):
 
 
 if __name__ == '__main__':
-    import sys
-
     args = sys.argv
     main(args[0], args[1], args[2])

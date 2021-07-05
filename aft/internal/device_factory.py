@@ -3,11 +3,11 @@ Factory module for creation of AFT device instances and their cutter objects
 """
 
 import aft.cutters.gpio_cutter
-import aft.devices.pcdevice
+import aft.devices.pc_device
 import aft.kb_emulators.gadgetkeyboard
 
 _DEVICE_CLASSES = {
-    "pc": aft.devices.pcdevice.PCDevice,
+    "pc": aft.devices.pc_device.PCDevice,
 }
 
 _CUTTER_CLASSES = {
@@ -24,8 +24,8 @@ def build_kb_emulator(config):
     Construct a keyboard emulator instance of type config["keyboard_emulator"]
     """
     if "keyboard_emulator" in config.keys():
-        kb_emulator_class = _KB_EMULATOR_CLASSES[
-            config["keyboard_emulator"].lower()]
+        import ipdb; ipdb.set_trace()
+        kb_emulator_class = _KB_EMULATOR_CLASSES[config["keyboard_emulator"].lower()]
         return kb_emulator_class(config)
     else:
         return None

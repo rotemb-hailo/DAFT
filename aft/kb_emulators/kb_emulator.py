@@ -1,14 +1,13 @@
 """
 Base class for keyboard emulators.
 """
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
 
-class KeyboardEmulator(ABCMeta):
+class KeyboardEmulator(ABC):
     """
     Common abstract base class for keyboard emulators.
     """
-
     @abstractmethod
     def send_keystrokes(self, keystrokes):
         """
