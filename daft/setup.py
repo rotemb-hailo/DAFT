@@ -23,7 +23,7 @@ setup(
     package_dir={"daft": "."},
     package_data={"daft": ["modes/*.py"]},
 
-    entry_points={"console_scripts": ["daft=main:main"]},
+    entry_points={"console_scripts": ["daft=daft.main:main"]},
     data_files=[("/etc/daft/", DEFAULT_CONFIG),
                 ("/etc/daft/lockfiles/", [])]
 )
