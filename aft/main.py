@@ -134,7 +134,8 @@ def parse_args():
                         help="Increases logging level")
 
     parser.add_argument("--ip-path",
-                        action="store_true",
+                        action="store",
+                        nargs="?",
                         default=None,
                         help="")
 

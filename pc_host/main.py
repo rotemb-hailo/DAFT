@@ -4,7 +4,6 @@ import os
 import sys
 
 from pc_host.modes.flash_mode import FlashMode
-from pc_host.modes.query_mode import QueryMode
 from pc_host.modes.update_mode import UpdateMode
 
 
@@ -34,11 +33,9 @@ def parse_args():
     update_parser = subparsers.add_parser(UpdateMode.name(),
                                           help="Update AFT to Beaglebone filesystem and DAFT to PC host")
     flash_parser = subparsers.add_parser(FlashMode.name(), help="Flash and boot images")
-    query_parser = subparsers.add_parser(QueryMode.name(), help="Query the machines")
 
     UpdateMode.add_mode_arguments(update_parser)
     FlashMode.add_mode_arguments(flash_parser)
-    QueryMode.add_mode_arguments(query_parser)
 
     return parser.parse_args()
 
@@ -47,7 +44,6 @@ def main():
     args = parse_args()
     config = get_daft_config()
     modes = {FlashMode.name(): FlashMode(args, config),
-             QueryMode.name(): QueryMode(args, config),
              UpdateMode.name(): UpdateMode(args, config)}
 
     return modes[args.mode].execute()

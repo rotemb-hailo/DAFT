@@ -28,6 +28,8 @@ class FlashMode(Mode):
                             help="Don't blacklist device if flashing/testing fails")
         parser.add_argument("--boot", action="store_true", default=False,
                             help="Flash DUT and reboot it in test mode")
+        parser.add_argument("--ip-path", action="store", nargs="?",
+                            help="Image to write.")
 
     def __init__(self, args, config):
         self._args = args
@@ -122,16 +124,18 @@ class FlashMode(Mode):
         start_time = time.time()
         dut = bb_dut["device_type"].lower()
         current_dir = os.getcwd().replace(self._config["workspace_nfs_path"], "")
-        img_path = self._args.image_file.replace(self._config["workspace_nfs_path"],
-                                                 "/root/workspace")
-        record = ""
-        if self._args.record:
-            record = "--record"
+        img_path = self._args.image_file.replace(self._config["workspace_nfs_path"], "/root/workspace")
+        record = "--record" if self._args.record else ""
+
         try:
-            output = remote_execute(bb_dut["bb_ip"],
-                                    ["cd", "/root/workspace" + current_dir, ";aft",
-                                     dut, img_path, record, "--boot", "test_mode"],
-                                    timeout=1200, config=self._config)
+            flash_command = ["cd", "/root/workspace" + current_dir, ";aft", dut, img_path, record, "--boot",
+                             "test_mode"]
+
+            if self._args.ip_path:
+                # Generate file remotely
+                flash_command.extend(['--ip-path', self._args.ip_path])
+
+            output = remote_execute(bb_dut["bb_ip"], flash_command, timeout=1200, config=self._config)
         finally:
             log_files = ["aft.log", "serial.log", "ssh.log", "kb_emulator.log",
                          "serial.log.raw"]
