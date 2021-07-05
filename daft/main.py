@@ -3,8 +3,8 @@ import configparser
 import os
 import sys
 
-from pc_host.modes.flash_mode import FlashMode
-from pc_host.modes.update_mode import UpdateMode
+from daft.modes.flash_mode import FlashMode
+from daft.modes.update_mode import UpdateMode
 
 
 def get_daft_config():

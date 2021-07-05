@@ -6,7 +6,7 @@ import subprocess
 import time
 from contextlib import contextmanager
 
-from pc_host.modes.exceptions import DevicesBlacklistedError, DeviceNameError
+from daft.modes.exceptions import DevicesBlacklistedError, DeviceNameError
 
 
 @contextmanager

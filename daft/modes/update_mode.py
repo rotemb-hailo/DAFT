@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from pc_host.modes.common import local_execute
-from pc_host.modes.mode import Mode
+from daft.modes.common import local_execute
+from daft.modes.mode import Mode
 
 
 class UpdateMode(Mode):
@@ -18,7 +18,7 @@ class UpdateMode(Mode):
         """
         Update Beaglebone AFT
         """
-        if os.path.isdir("testing_harness") and os.path.isdir("pc_host"):
+        if os.path.isdir("testing_harness") and os.path.isdir("daft"):
             if os.path.isdir(self._config["bbb_fs_path"] + self._config["bbb_aft_path"]):
                 try:
                     shutil.rmtree(self._config["bbb_fs_path"] + self._config["bbb_aft_path"])
@@ -32,14 +32,14 @@ class UpdateMode(Mode):
                       self._config["bbb_aft_path"])
                 return 3
 
-            local_execute("python3 setup.py install".split(), cwd="pc_host/")
-            local_execute("rm -r DAFT.egg-info build dist".split(), cwd="pc_host/")
+            local_execute("python3 setup.py install".split(), cwd="daft/")
+            local_execute("rm -r DAFT.egg-info build dist".split(), cwd="daft/")
             print("Updated DAFT successfully")
 
             return 0
 
         else:
-            print("Can't update, didn't find 'pc_host' and 'testing_harness' directory")
+            print("Can't update, didn't find 'daft' and 'testing_harness' directory")
             return 2
 
     @classmethod

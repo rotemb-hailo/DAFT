@@ -1,9 +1,9 @@
 import os
 import time
 
-from pc_host.modes.common import reserve_device, remote_execute, time_used
-from pc_host.modes.exceptions import DevicesBlacklistedError, DeviceNameError, ImageNameError, FlashImageError
-from pc_host.modes.mode import Mode
+from daft.modes.common import reserve_device, remote_execute, time_used
+from daft.modes.exceptions import DevicesBlacklistedError, DeviceNameError, ImageNameError, FlashImageError
+from daft.modes.mode import Mode
 
 
 class FlashMode(Mode):

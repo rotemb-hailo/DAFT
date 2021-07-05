@@ -18,7 +18,11 @@ setup(
     author="Simo Kuusela, Topi Kuutela, Igor Stoppa",
     author_email="simo.kuusela@intel.com",
     url="github",
-    py_modules=["main"],
+
+    packages=["daft"],
+    package_dir={"daft": "."},
+    package_data={"daft": ["modes/*.py"]},
+
     entry_points={"console_scripts": ["daft=main:main"]},
     data_files=[("/etc/daft/", DEFAULT_CONFIG),
                 ("/etc/daft/lockfiles/", [])]
