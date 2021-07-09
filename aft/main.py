@@ -60,13 +60,13 @@ def main_logic():
             elif args.boot == "service_mode":
                 device.boot_usb_service_mode()
 
-        _save_ip(device, args.ip_path)
+        if args.save_ip:
+            _save_ip(device, args.machine)
 
 
-def _save_ip(device, ip_path):
-    if ip_path:
-        device_ip = device.get_ip()
-        Path(ip_path).write_text(device_ip)
+def _save_ip(device, machine):
+    device_ip = device.get_ip()
+    Path(f"/root/workspace/{machine}").write_text(device_ip)
 
 
 def parse_args():
@@ -133,10 +133,9 @@ def parse_args():
                         action="store_true",
                         help="Increases logging level")
 
-    parser.add_argument("--ip-path",
-                        action="store",
-                        nargs="?",
-                        default=None,
+    parser.add_argument("--save-ip",
+                        action="store_true",
+                        default=False,
                         help="")
 
     return parser.parse_args()

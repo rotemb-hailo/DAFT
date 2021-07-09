@@ -7,6 +7,8 @@ from daft.modes.mode import Mode
 
 
 class FlashMode(Mode):
+    GENERATED_LOG_FILES = ["aft.log", "serial.log", "ssh.log", "kb_emulator.log", "serial.log.raw"]
+
     @classmethod
     def name(cls):
         return 'flash'
@@ -28,8 +30,8 @@ class FlashMode(Mode):
                             help="Don't blacklist device if flashing/testing fails")
         parser.add_argument("--boot", action="store_true", default=False,
                             help="Flash DUT and reboot it in test mode")
-        parser.add_argument("--ip-path", action="store", nargs="?",
-                            help="Image to write.")
+        parser.add_argument("--save-ip", action="store_true", default=False,
+                            help="Save the deployed ip into a file.")
 
     def __init__(self, args, config):
         self._args = args
@@ -75,105 +77,53 @@ class FlashMode(Mode):
 
         return 0
 
-    def execute_flashing(self, bb_dut):
+    def execute_flashing(self, bb_dut, additional_flags=None):
         """
         Execute flashing of the DUT
         """
         if not os.path.isfile(self._args.image_file):
-            print(self._args.image_file + " doesn't exist.")
-            raise ImageNameError()
+            raise ImageNameError(self._args.image_file + " doesn't exist.")
 
         print("Executing flashing of DUT")
-        start_time = time.time()
+
+        record = "--record" if self._args.record else ""
         dut = bb_dut["device_type"].lower()
         current_dir = os.getcwd().replace(self._config["workspace_nfs_path"], "")
-        img_path = self._args.image_file.replace(self._config["workspace_nfs_path"],
-                                                 "/root/workspace")
-        record = ""
-        if self._args.record:
-            record = "--record"
+        img_path = self._args.image_file.replace(self._config["workspace_nfs_path"], "/root/workspace")
+
         try:
             command = ["cd", "/root/workspace" + current_dir, ";aft", dut, img_path, record]
-            output = remote_execute(bb_dut["bb_ip"],
-                                    command=command,
-                                    timeout=1200, config=self._config)
 
+            if self._args.save_ip:
+                command.extend(['--save-ip'])
+            if additional_flags:
+                command.extend(additional_flags)
+
+            start_time = time.time()
+            output = remote_execute(bb_dut["bb_ip"], command=command, timeout=1200, config=self._config)
+
+            print(output, end="")
+            print("Flashing took: " + time_used(start_time))
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception:
             raise FlashImageError()
         finally:
-            log_files = ["aft.log", "serial.log", "ssh.log", "kb_emulator.log",
-                         "serial.log.raw"]
-            for log in log_files:
-                if os.path.isfile(log):
-                    os.rename(log, "flash_" + log)
-
-        print(output, end="")
-        print("Flashing took: " + time_used(start_time))
+            self._rename_logs()
 
     def dut_flash_and_boot(self, bb_dut):
         """
         Flash DUT and reboot it in test mode
         """
-        if not os.path.isfile(self._args.image_file):
-            print(self._args.image_file + " doesn't exist.")
-            raise ImageNameError()
-
-        print("Executing flashing of DUT")
-        start_time = time.time()
-        dut = bb_dut["device_type"].lower()
-        current_dir = os.getcwd().replace(self._config["workspace_nfs_path"], "")
-        img_path = self._args.image_file.replace(self._config["workspace_nfs_path"], "/root/workspace")
-        record = "--record" if self._args.record else ""
-
-        try:
-            flash_command = ["cd", "/root/workspace" + current_dir, ";aft", dut, img_path, record, "--boot",
-                             "test_mode"]
-
-            if self._args.ip_path:
-                # Generate file remotely
-                flash_command.extend(['--ip-path', self._args.ip_path])
-
-            output = remote_execute(bb_dut["bb_ip"], flash_command, timeout=1200, config=self._config)
-        finally:
-            log_files = ["aft.log", "serial.log", "ssh.log", "kb_emulator.log",
-                         "serial.log.raw"]
-            for log in log_files:
-                if os.path.isfile(log):
-                    os.rename(log, "flash_" + log)
-
-        print(output, end="")
-        print("Flashing took: " + time_used(start_time))
+        return self.execute_flashing(bb_dut, additional_flags=['--boot', 'test_mode'])
 
     def execute_usb_emulation(self, bb_dut):
         """
         Use testing harness USB emulation to boot the image
         """
-        if not os.path.isfile(self._args.image_file):
-            print(self._args.image_file + " doesn't exist.")
-            raise ImageNameError()
+        return self.execute_flashing(bb_dut, additional_flags=["--emulateusb"])
 
-        print("Executing testing of DUT")
-        start_time = time.time()
-        dut = bb_dut["device_type"].lower()
-        current_dir = os.getcwd().replace(self._config["workspace_nfs_path"], "")
-        img_path = self._args.image_file.replace(self._config["workspace_nfs_path"], "/root/workspace")
-        record = ""
-
-        if self._args.record:
-            record = "--record"
-        try:
-            output = remote_execute(bb_dut["bb_ip"],
-                                    ["cd", "/root/workspace" + current_dir, ";aft",
-                                     dut, img_path, record, "--emulateusb"],
-                                    timeout=1200, config=self._config)
-        finally:
-            log_files = ["aft.log", "serial.log", "ssh.log", "kb_emulator.log",
-                         "serial.log.raw"]
-            for log in log_files:
-                if os.path.isfile(log):
-                    os.rename(log, "test_" + log)
-
-        print(output, end="")
-        print("Testing took: " + time_used(start_time))
+    def _rename_logs(self):
+        for log in self.GENERATED_LOG_FILES:
+            if os.path.isfile(log):
+                os.rename(log, "flash_" + log)

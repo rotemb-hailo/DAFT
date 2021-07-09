@@ -19,7 +19,8 @@ def reserve_device(args, config):
     finally:
         if device:
             release_device(device)
-            remote_execute(device["bb_ip"], "killall -s SIGINT aft".split(), timeout=10, config=config)
+            remote_execute(device["bb_ip"], 'ps aux | grep "[a]ft" | xargs -r kill -s SIGINT'.split(), timeout=10,
+                           config=config)
 
 
 def _reserve_device(args):
