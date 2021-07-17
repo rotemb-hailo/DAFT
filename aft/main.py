@@ -48,7 +48,7 @@ def main_logic():
 
     device_manager = DevicesManager(args)
 
-    with device_manager as device:
+    with device_manager.reserve() as device:
         device_manager.prepare_device(device, args)
         device_manager.try_flash_device(args, device)
 
@@ -65,8 +65,9 @@ def main_logic():
 
 
 def _save_ip(device, machine):
+    logger.info('Saving ip')
     device_ip = device.get_ip()
-    Path(f"/root/workspace/{machine}").write_text(device_ip)
+    Path(f"/root/workspace/{machine}.ip").write_text(device_ip)
 
 
 def parse_args():

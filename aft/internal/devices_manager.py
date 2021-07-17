@@ -1,12 +1,14 @@
 """Tool for managing collection of devices from the same host PC"""
 
 import atexit
-import configparser
 import errno
+
+import configparser
 import fcntl
 import os
 import sys
 import time
+from contextlib import contextmanager
 
 import aft.internal.config as config
 import aft.internal.device_factory as device_factory
@@ -36,12 +38,6 @@ class DevicesManager:
         self._lock_files = []
         self._logger = Logger
         self.device_configs = self._construct_configs()
-
-    def __enter__(self):
-        self.reserve()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.release()
 
     def _construct_configs(self):
         """
@@ -107,7 +103,18 @@ class DevicesManager:
 
         return configs
 
+    @contextmanager
     def reserve(self, timeout=3600):
+        device = None
+
+        try:
+            device = self._reserve(timeout)
+            yield device
+        finally:
+            if device:
+                self._release(device)
+
+    def _reserve(self, timeout=3600):
         """
         Reserve and lock a device and return it
         """
@@ -173,7 +180,7 @@ class DevicesManager:
 
                     self._logger.info("Device acquired.")
                     self._lock_files.append(("daft_dut_lock", lockfile))
-                    atexit.register(self.release, device)
+                    atexit.register(self._release, device)
 
                     return device
                 except IOError as err:
@@ -186,7 +193,7 @@ class DevicesManager:
             time.sleep(10)
         raise errors.AFTTimeoutError("Could not reserve " + name + " in " + str(timeout) + " seconds.")
 
-    def release(self, reserved_device):
+    def _release(self, reserved_device):
         """
         Put the reserved device back to the pool. It will happen anyway when
         the process dies, but this removes the stale lockfile.
@@ -249,7 +256,7 @@ class DevicesManager:
 
                 if (flash_retries - flash_attempt) == 0:
                     self._logger.info("Flashing failed " + str(flash_attempt) + " times")
-                    self.release(device)
+                    self._release(device)
                     raise
                 elif (flash_retries - flash_attempt) == 1:
                     self._logger.info("Flashing failed, trying again one more time")

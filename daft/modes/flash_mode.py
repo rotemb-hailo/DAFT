@@ -1,7 +1,11 @@
+import ipaddress
+
 import os
 import time
+from pathlib import Path
 
-from daft.modes.common import reserve_device, remote_execute, time_used
+from daft.modes import networking
+from daft.modes.common import reserve_device, remote_execute, time_used, local_execute
 from daft.modes.exceptions import DevicesBlacklistedError, DeviceNameError, ImageNameError, FlashImageError
 from daft.modes.mode import Mode
 
@@ -95,6 +99,10 @@ class FlashMode(Mode):
             command = ["cd", "/root/workspace" + current_dir, ";aft", dut, img_path, record]
 
             if self._args.save_ip:
+                # Delete the file if already exists
+                expected_ip_path = Path(self._config["workspace_nfs_path"]) / self._args.dut.lower()
+                expected_ip_path.unlink(missing_ok=True)
+
                 command.extend(['--save-ip'])
             if additional_flags:
                 command.extend(additional_flags)
@@ -115,7 +123,17 @@ class FlashMode(Mode):
         """
         Flash DUT and reboot it in test mode
         """
-        return self.execute_flashing(bb_dut, additional_flags=['--boot', 'test_mode'])
+        flash_results = self.execute_flashing(bb_dut, additional_flags=['--boot', 'test_mode'])
+        dut_ip_file = Path(self._config["workspace_nfs_path"]) / self._args.dut.lower()
+
+        if dut_ip_file.exists():
+            dut_ip = dut_ip_file.read_text()
+            bbb_ip = bb_dut["bb_ip"]
+
+            networking.fix_dut_routing(dut_ip, bbb_ip)
+            networking.rewrite_ssh_keys(dut_ip)
+
+        return flash_results
 
     def execute_usb_emulation(self, bb_dut):
         """
