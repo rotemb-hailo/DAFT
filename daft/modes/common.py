@@ -132,7 +132,7 @@ def local_execute(command, timeout=60, ignore_return_codes=None, cwd=None, shell
     process = subprocess.Popen(command, universal_newlines=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
-                               cwd=cwd)
+                               cwd=cwd, shell=shell)
     start = time.time()
     output = ""
     return_code = None

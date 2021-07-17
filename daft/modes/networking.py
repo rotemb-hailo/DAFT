@@ -22,13 +22,13 @@ def fix_dut_routing(dut_ip, bbb_ip):
 
     routing_exists_command = f"ip route | grep {dut_network} | wc -l"
     routing_exists_stdout = local_execute(routing_exists_command, shell=True)
-    no_routing_found = routing_exists_stdout == "0"
+    no_routing_found = routing_exists_stdout.strip() == "0"
 
     if no_routing_found:
         add_ip_route_command = f"sudo ip route add {dut_network}/24 via {bbb_ip}".split()
         local_execute(add_ip_route_command)
 
 
-def rewrite_ssh_keys(ip):
-    local_execute(f'ssh-keygen -f "/home/hailo/.ssh/known_hosts" -R "{ip}"')
-    local_execute(f'ssh-copy-id "{ip}"')
+def rewrite_ssh_keys(ip, username='root', password='root'):
+    local_execute(f'ssh-keygen -f "/home/hailo/.ssh/known_hosts" -R "{ip}"', shell=True)
+    local_execute(f'sshpass -p {password} ssh-copy-id {username}@{ip}', shell=True)
