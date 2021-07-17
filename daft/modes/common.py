@@ -123,7 +123,7 @@ def remote_execute(remote_ip, command, timeout=60, ignore_return_codes=None,
         return output
 
 
-def local_execute(command, timeout=60, ignore_return_codes=None, cwd=None):
+def local_execute(command, timeout=60, ignore_return_codes=None, cwd=None, shell=False):
     """
     Execute a command on local machine. Returns combined stdout and stderr if
     return code is 0 or included in the list 'ignore_return_codes'. Otherwise

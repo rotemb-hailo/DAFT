@@ -21,11 +21,11 @@ def fix_dut_routing(dut_ip, bbb_ip):
     dut_network = get_network_from_ip(dut_ip)
 
     routing_exists_command = f"ip route | grep {dut_network} | wc -l"
-    routing_exists_stdout = local_execute(routing_exists_command)
+    routing_exists_stdout = local_execute(routing_exists_command, shell=True)
     no_routing_found = routing_exists_stdout == "0"
 
     if no_routing_found:
-        add_ip_route_command = f"sudo ip route add {dut_network}/24 via {bbb_ip}"
+        add_ip_route_command = f"sudo ip route add {dut_network}/24 via {bbb_ip}".split()
         local_execute(add_ip_route_command)
 
 

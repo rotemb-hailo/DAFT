@@ -1,11 +1,10 @@
-import ipaddress
-
 import os
 import time
+from contextlib import suppress
 from pathlib import Path
 
 from daft.modes import networking
-from daft.modes.common import reserve_device, remote_execute, time_used, local_execute
+from daft.modes.common import reserve_device, remote_execute, time_used
 from daft.modes.exceptions import DevicesBlacklistedError, DeviceNameError, ImageNameError, FlashImageError
 from daft.modes.mode import Mode
 
@@ -100,8 +99,10 @@ class FlashMode(Mode):
 
             if self._args.save_ip:
                 # Delete the file if already exists
-                expected_ip_path = Path(self._config["workspace_nfs_path"]) / self._args.dut.lower()
-                expected_ip_path.unlink(missing_ok=True)
+                expected_ip_path = Path(self._config["workspace_nfs_path"]) / (self._args.dut.lower() + ".ip")
+
+                with suppress(FileNotFoundError):
+                    expected_ip_path.unlink()
 
                 command.extend(['--save-ip'])
             if additional_flags:
