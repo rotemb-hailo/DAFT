@@ -125,7 +125,7 @@ class FlashMode(Mode):
         Flash DUT and reboot it in test mode
         """
         flash_results = self.execute_flashing(bb_dut, additional_flags=['--boot', 'test_mode'])
-        dut_ip_file = Path(self._config["workspace_nfs_path"]) / self._args.dut.lower()
+        dut_ip_file = Path(self._config["workspace_nfs_path"]) / (self._args.dut.lower() + ".ip")
 
         if dut_ip_file.exists():
             dut_ip = dut_ip_file.read_text()
