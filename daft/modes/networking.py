@@ -29,5 +29,6 @@ def fix_dut_routing(dut_ip, bbb_ip):
         local_execute(add_ip_route_command)
 
 
-def refresh_known_hosts(dut_ip):
+def refresh_known_hosts(dut_ip, username='root'):
     local_execute(f'ssh-keygen -f "/home/hailo/.ssh/known_hosts" -R "{dut_ip}"', shell=True)
+    local_execute(f' ssh -oStrictHostKeyChecking=accept-new {username}@{dut_ip}', shell=True)
