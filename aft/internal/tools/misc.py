@@ -65,16 +65,24 @@ def inject_ssh_keys_to_image(image_file):
             possible_roots.append(_start_block)
 
     os.makedirs("daft_tmp_dir")
-    auth_keys_path = "daft_tmp_dir/home/root/.ssh/authorized_keys"
 
     for start_block in possible_roots:
         offset = str(block_size * start_block)
         local_execute(("mount -o loop,offset=" + offset + " " + image_file + " daft_tmp_dir").split())
         if os.path.exists("daft_tmp_dir/home/root"):
-            local_execute(("touch " + auth_keys_path).split())
-            with open(auth_keys_path, "a") as authorized_keys:
-                with open("/root/.ssh/id_rsa_testing_harness.pub", "r")as key:
-                    authorized_keys.write("\n" + key.read())
-                    authorized_keys.flush()
+            _inject_keys()
+
         local_execute("umount daft_tmp_dir".split())
     os.rmdir("daft_tmp_dir")
+
+
+def _inject_keys():
+    bbb_key = "/root/.ssh/id_rsa_testing_harness.pub"
+    auth_keys_path = "daft_tmp_dir/home/root/.ssh/authorized_keys"
+
+    local_execute(("touch " + auth_keys_path).split())
+
+    with open(auth_keys_path, "a") as authorized_keys:
+        with open(bbb_key, "r")as key:
+            authorized_keys.write("\n" + key.read())
+            authorized_keys.flush()

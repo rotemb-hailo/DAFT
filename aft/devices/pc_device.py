@@ -221,8 +221,8 @@ class PCDevice(Device):
         ssh.remote_execute(self.device_ip, bmap_args, timeout=self._SSH_IMAGE_WRITING_TIMEOUT)
 
         # Flashing the same file as already on the disk causes non-blocking
-        # removal and re-creation of /dev/disk/by-partuuid/ files. This sequence
-        # either delays enough or actually settles it.
+        # removal and re-creation of /dev/disk/by-partuuid/ files.
+        # This sequence either delays enough or actually settles it.
         logger.info("Partprobing.")
         ssh.remote_execute(self.device_ip, ["partprobe", self._target_device])
         ssh.remote_execute(self.device_ip, ["sync"])
@@ -318,6 +318,8 @@ class PCDevice(Device):
     def _install_tester_public_key(self, image_file_name):
         """
         Copy ssh public key to root user on the target device.
+        After the Flash process is done, mount the mmcblk0p1 (rootfs partition) in order to inject the SSH keys allowed
+        (*The DUT is booted in service mode during this process)
 
         Returns:
             None
@@ -334,25 +336,19 @@ class PCDevice(Device):
                                   "sed", "-e", '"s/:.*//"']
         root_user_home = ssh.remote_execute(self.device_ip, root_user_home_command).rstrip().lstrip("/")
 
-        # Ignore return value: directory might exist
         logger.info("Writing ssh-key to device.")
-        ssh.remote_execute(self.device_ip,
-                           ["mkdir", os.path.join(self._ROOT_PARTITION_MOUNT_POINT, root_user_home, ".ssh")],
-                           ignore_return_codes=[1])
+        remote_ssh_dir = os.path.join(self._ROOT_PARTITION_MOUNT_POINT, root_user_home, ".ssh")
+        ssh.remote_execute(self.device_ip, ["mkdir", "-p", remote_ssh_dir])
+        ssh.remote_execute(self.device_ip, ["chmod", "700", remote_ssh_dir])
 
-        ssh.remote_execute(self.device_ip,
-                           ["chmod", "700", os.path.join(self._ROOT_PARTITION_MOUNT_POINT, root_user_home, ".ssh")])
-
-        # Try to copy SSH keys to the authorized_keys file
         try:
-            authorized_keys_path = os.path.join(self._ROOT_PARTITION_MOUNT_POINT, root_user_home,
-                                                ".ssh/authorized_keys")
+            # Try to copy SSH keys to the authorized_keys file
+            authorized_keys_path = os.path.join(remote_ssh_dir, "authorized_keys")
             ssh.remote_execute(self.device_ip, ["cat", "~/.ssh/authorized_keys", ">>", authorized_keys_path])
             ssh.remote_execute(self.device_ip, ["chmod", "600", authorized_keys_path])
-
-        # If the preceding method fails, try to copy them directly to a dropbear authorized_keys files
-        # (as the the preceding method fails if the device is running dropbear instead of OpenSSH)
-        except:
+        except Exception as e:
+            # If the preceding method fails, try to copy them directly to a dropbear authorized_keys files
+            # (as the the preceding method fails if the device is running dropbear instead of OpenSSH)
             logger.info("Failed, trying to write the ssh-key in dropbear file instead.")
             ssh.remote_execute(self.device_ip, ["cat", "~/.ssh/authorized_keys", ">>",
                                                 os.path.join(self._ROOT_PARTITION_MOUNT_POINT,

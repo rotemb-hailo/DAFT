@@ -29,6 +29,5 @@ def fix_dut_routing(dut_ip, bbb_ip):
         local_execute(add_ip_route_command)
 
 
-def rewrite_ssh_keys(ip, username='root', password='root'):
-    local_execute(f'ssh-keygen -f "/home/hailo/.ssh/known_hosts" -R "{ip}"', shell=True)
-    local_execute(f'sshpass -p {password} ssh-copy-id {username}@{ip}', shell=True)
+def refresh_known_hosts(dut_ip):
+    local_execute(f'ssh-keygen -f "/home/hailo/.ssh/known_hosts" -R "{dut_ip}"', shell=True)

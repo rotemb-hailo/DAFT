@@ -132,7 +132,7 @@ class FlashMode(Mode):
             bbb_ip = bb_dut["bb_ip"]
 
             networking.fix_dut_routing(dut_ip, bbb_ip)
-            networking.rewrite_ssh_keys(dut_ip)
+            networking.refresh_known_hosts(dut_ip)
 
         return flash_results
 
